@@ -1,53 +1,53 @@
-# UI-референс (целевой макет)
+# UI reference (target mockup)
 
-Основа: интерфейс QtTinySA (v1.0.2) и `spectrum.ui` из референса v2.0.2. Порт делаем
-функционально эквивалентным, не пиксель-в-пиксель, но структуру повторяем.
+Based on the QtTinySA interface (v1.0.2) and `spectrum.ui` from reference v2.0.2. The port is
+functionally equivalent, not pixel-for-pixel, but follows the same structure.
 
-## Общая сетка
+## Overall layout
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ File  Settings  Help                                    (заголовок)  │
+│ File  Settings  Help                                          (title) │
 ├───────────────┬──────────────────────────────────────────────────────┤
-│ левая панель  │  спектр (dBm × МГц, сетка, лимиты, маркеры 1–4)      │
+│ left panel    │  spectrum (dBm × MHz, grid, limits, markers 1–4)     │
 │ ~300 px       │                                                      │
 │               ├──────────────────────────────────────────────────────┤
-│               │  водопад (waterfall)                                 │
+│               │  waterfall                                           │
 │               ├──────────────────────────────────────────────────────┤
-│               │  нижняя панель управления (2 ряда)                   │
+│               │  bottom control panel (2 rows)                       │
 └───────────────┴──────────────────────────────────────────────────────┘
 ```
 
-## Левая панель (сверху вниз)
+## Left panel (top to bottom)
 
-1. **Options**: `LNA`, `Spurs` — чекбоксы.
-2. **Attenuator**: чекбокс auto + числовое поле dB.
-3. **RBW**: чекбокс auto + выпадающий список кГц.
-4. **Points**: чекбокс auto + число точек + число повторов (sample repeat).
-5. **Traces** ×4: чекбокс + тип (`Normal`, `Max`, `Average`, `Min`).
-6. Слайдер высоты водопада (25…), индикатор батареи/напряжения («No Device» без прибора).
-7. Кнопка **LNB Mode**.
+1. **Options**: `LNA`, `Spurs` — checkboxes.
+2. **Attenuator**: auto checkbox + numeric dB field.
+3. **RBW**: auto checkbox + drop-down list in kHz.
+4. **Points**: auto checkbox + point count + sample repeat count.
+5. **Traces** ×4: checkbox + type (`Normal`, `Max`, `Average`, `Min`).
+6. Waterfall height slider (25…), battery/voltage indicator ("No Device" without a device).
+7. **LNB Mode** button.
 
-## Нижняя панель (2 ряда)
+## Bottom panel (2 rows)
 
-Ряд 1: points, RBW/деление, выбор band-пресета (`2G WiFi`), span/центр, кнопки
-`<>`, стрелки, `Max`, `Off` ×3, чекбокс, **Run**.
+Row 1: points, RBW/div, band preset selector (`2G WiFi`), span/center, `<>` button,
+arrows, `Max`, `Off` ×3, checkbox, **Run**.
 
-Ряд 2: attenuator, start freq, band-пресет (`amateur`), span, `+`, `<>`,
-цветные кнопки маркеров 1–4, чекбокс, **3D**.
+Row 2: attenuator, start freq, band preset (`amateur`), span, `+`, `<>`,
+colored marker buttons 1–4, checkbox, **3D**.
 
-## Маркеры и лимиты
+## Markers and limits
 
-- Маркеры M1–M4: цветные флажки на графике (жёлтый/голубой/оранжевый/…), перетаскивание,
-  клик по графику — центрирование.
-- Горизонтальные линии: best (−25 дБ), maximum (0), damage (+6), threshold (двигается),
-  reference (двигается); lowF/highF — границы поиска min/max.
+- Markers M1–M4: colored flags on the plot (yellow/cyan/orange/…), draggable;
+  clicking the plot centers on the marker.
+- Horizontal lines: best (−25 dB), maximum (0), damage (+6), threshold (movable),
+  reference (movable); lowF/highF are the min/max detection bounds.
 
-## Что из этого делаем в M2/M3
+## What we implement in M2/M3
 
-- M2: спектр + водопад + Run/Stop + точки/RBW/atten/LNA/spur + частоты.
-- M3: маркеры, лимиты, band-пресеты, LNB, traces (max/avg/min), нижняя панель.
-- Svelte-компоненты: `Spectrum.svelte`, `Waterfall.svelte`, `Sidebar.svelte`,
+- M2: spectrum + waterfall + Run/Stop + points/RBW/atten/LNA/spur + frequencies.
+- M3: markers, limits, band presets, LNB, traces (max/avg/min), bottom panel.
+- Svelte components: `Spectrum.svelte`, `Waterfall.svelte`, `Sidebar.svelte`,
   `BottomBar.svelte`, `Markers.svelte`, `StatusBar.svelte`.
 
-Скриншоты референса в репозиторий не коммитятся; при необходимости добавьте обезличенный макет в `docs/`.
+Reference screenshots are not committed to the repository; if needed, add an anonymized mockup to `docs/`.

@@ -761,7 +761,7 @@
         <button class="x" on:click={() => (aboutOpen = false)}>×</button>
       </div>
       <div class="dialog-body">
-        <div><b>tinysa_go</b> <span class="mono">{version}</span></div>
+        <div><b>GoTinySA</b> <span class="mono">{version}</span></div>
         <div class="hint">{t('about.description')}</div>
       </div>
     </div>

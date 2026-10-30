@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="assets/logo.png" alt="tinysa_go" width="148">
+  <img src="assets/logo.png" alt="GoTinySA" width="148">
 </p>
 
-# tinysa_go
+# GoTinySA
 
 [English](README.md) | **Русский**
 
-tinysa_go — настольное приложение для анализаторов спектра **tinySA** и **tinySA Ultra** на Go с интерфейсом Wails/Svelte. Это порт [QtTinySA](https://github.com/g4ixt/QtTinySA): функциональность оригинала сохранена, а последовательный порт, разбор свипов, логирование и работа с файлами вынесены из потока интерфейса.
+GoTinySA — настольное приложение для анализаторов спектра **tinySA** и **tinySA Ultra** на Go с интерфейсом Wails/Svelte. Это порт [QtTinySA](https://github.com/g4ixt/QtTinySA): функциональность оригинала сохранена, а последовательный порт, разбор свипов, логирование и работа с файлами вынесены из потока интерфейса.
 
 Приложение собирается в один бинарник для Linux и Windows. Встроенный HTTP-сервер даёт отдельный интерфейс для телефона, чтобы настраивать антенну из той же локальной сети.
 

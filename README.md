@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="tinysa_go" width="148">
+  <img src="assets/logo.png" alt="GoTinySA" width="148">
 </p>
 
 # GoTinySA

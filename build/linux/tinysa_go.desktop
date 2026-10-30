@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=tinysa_go
+Name=GoTinySA
 GenericName=Spectrum analyzer
 Comment=Desktop spectrum analyzer for tinySA and tinySA Ultra
 Exec=tinysa_go

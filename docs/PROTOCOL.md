@@ -1,65 +1,65 @@
-# Протокол tinySA (конспект по референсу)
+# tinySA protocol (reference notes)
 
-Источник: `reference/QtTinySA/src/modules/devices.py` @ `1cc609d`.
-Цель: при реализации не переизобретать, а перенести 1:1 (плюс сверка с документацией tinySA при спорных местах).
+Source: `reference/QtTinySA/src/modules/devices.py` @ `1cc609d`.
+Goal: port the reference 1:1 instead of reinventing it (and check the tinySA documentation when details are ambiguous).
 
-## Транспорт
+## Transport
 
-- USB CDC ACM; **VID:PID `0483:5740`**; product: `tinySA` (basic) / `tinySA4` (Ultra, Ultra+); до 4 устройств.
-- pyserial открывает на baudrate 576000 (для CDC фактически не критично).
-- Команды ASCII, терминированы `\r`. Прибор отвечает эхом команды и промптом `ch> `.
+- USB CDC ACM; **VID:PID `0483:5740`**; product: `tinySA` (basic) / `tinySA4` (Ultra, Ultra+); up to 4 devices.
+- pyserial opens at baudrate 576000 (not actually critical for CDC).
+- Commands are ASCII, terminated with `\r`. The device echoes the command and responds with the `ch> ` prompt.
 - `serialWrite`: write → read_until(`ch> `).
-- `serialQuery`: write → пропустить эхо до `\n` → читать до `ch> ` → ответ = без промпта.
+- `serialQuery`: write → skip the echo up to `\n` → read up to `ch> ` → the response is returned without the prompt.
 
-## Свип (scanraw) — основной цикл
+## Sweep (scanraw): main loop
 
-- Команда: `scanraw <startHz> <stopHz> <points> 3\r` — авто-повтор (FW ≥ 1.4.177);
-  `... 1\r` — одиночный свип (повтор отправлять самим; legacy).
-- Данные: на точку **3 байта**: `'c'` + uint16 little-endian.
-  Конверсия: **dBm = data/32 − scale**, где `scale` = **174 (Ultra/Ultra+)**, **128 (basic)**.
-- Конец свипа в auto-repeat: пара `}{`; при остановке вручную не читать лишнее, послать `abort\r`.
-- Если пользователь тронул экран/джойстик — приходит `}` (или иной сбой), цикл прерывается с инфо-сообщением.
-- При рассинхроне (`self.usb.read(2) != b'}{'`) — сброс буфера и предупреждение «display out of sync».
+- Command: `scanraw <startHz> <stopHz> <points> 3\r` — auto-repeat (FW ≥ 1.4.177);
+  `... 1\r` — single sweep (send the repeat yourself; legacy).
+- Data: **3 bytes** per point: `'c'` + uint16 little-endian.
+  Conversion: **dBm = data/32 − scale**, where `scale` is **174 (Ultra/Ultra+)**, **128 (basic)**.
+- End of sweep in auto-repeat: the `}{` pair; when stopping manually, do not read extra data, send `abort\r`.
+- If the user touches the screen or joystick, a `}` (or another failure) arrives and the loop stops with an info message.
+- On desynchronization (`self.usb.read(2) != b'}{'`), reset the buffer and warn "display out of sync".
 
-Таймаут на чтение блока (эвристика `sweepTimeout`, перенести как есть):
+Read timeout for a block (the `sweepTimeout` heuristic, port as-is):
 
 ```
 rbw = "auto" ? (stop-start)*7e-6 : rbw_kHz            # clip 0.2..850 (basic: 3..600)
 timeout = ((stop-start)/20e3)/(rbw^2) + points/500
 if spur on/auto and stop > 800 MHz: timeout *= 2
-timeout = timeout * 20 / points + 1                    # минимум 1 с
+timeout = timeout * 20 / points + 1                    # minimum 1 s
 ```
 
-## Используемые команды протокола
+## Protocol commands used
 
-| Команда | Назначение |
+| Command | Purpose |
 |---|---|
-| `version` | версия FW (строка `tinySA4_v1.4-…`) |
-| `info` | описание устройства |
-| `deviceid` | серийный номер |
-| `vbat` | напряжение батареи |
-| `time b 0xYYMMDD 0xHHMMSS` | синхронизация часов |
-| `scanraw …` | свип (см. выше) |
-| `abort` / `abort on` / `abort off` | прерывание/режим abort |
-| `pause` / `resume` / `reset` | пауза/продолжение/сброс |
-| `attenuate auto|0..n` | аттенюатор |
-| `lna on/off` | LNA (только Ultra) |
-| `spur auto|on|off` | подавление спуров (basic: auto → on) |
-| `rbw <kHz|auto>` | RBW |
-| `repeat <n>` | число повторов измерений на точку |
-| `sweep start/stop <Hz>` | дефолт диапазона на приборе |
-| `sd_list`, `sd_read <file>` | SD-карта прибора (файлы/чтение) |
-| `example` | пример (используется для проверки связи) |
+| `version` | FW version (string `tinySA4_v1.4-…`) |
+| `info` | device description |
+| `deviceid` | serial number |
+| `vbat` | battery voltage |
+| `time b 0xYYMMDD 0xHHMMSS` | clock synchronization |
+| `scanraw …` | sweep (see above) |
+| `abort` / `abort on` / `abort off` | abort/interrupt mode |
+| `pause` / `resume` / `reset` | pause/resume/reset |
+| `attenuate auto\|0..n` | attenuator |
+| `lna on/off` | LNA (Ultra only) |
+| `spur auto\|on\|off` | spur suppression (basic: auto → on) |
+| `rbw <kHz\|auto>` | RBW |
+| `repeat <n>` | number of measurement repeats per point |
+| `sweep start/stop <Hz>` | default device range |
+| `sd_list`, `sd_read <file>` | device SD card (listing/reading) |
+| `example` | example command (used for link checks) |
 
-## Записи `.npy` (совместимость)
+## `.npy` recordings (compatibility)
 
-- Формат оригинала (`Recorder`): 2D float-массив; **row 0** = `[serial, freq1…freqN]`,
-  далее строки = измерения; **col 0** = timestamps (время снятия свипа), далее dBm.
-- Лимит ~`10e6` полей на массив (порядка 32 МБ на файл).
-- Наш порт обязан читать и писать этот же формат (и `.npy` c float32/float64).
+- Original format (`Recorder`): 2D float array; **row 0** = `[serial, freq1…freqN]`,
+  subsequent rows = measurements; **col 0** = timestamps (sweep acquisition time), then dBm.
+- Limit of ~`10e6` fields per array (about 32 MB per file).
+- Our port must read and write the same format (and `.npy` with float32/float64).
 
-## Экспорт CSV (из `exporters.py`)
+## CSV export (from `exporters.py`)
 
-- **Общий CSV**: частота в МГц (3 знака) + уровень (4 знака).
-- **Shure WWB**: одна трасса на файл (выбор trace 1–4), частота в МГц.
-- **Sennheiser WSM**: разделитель `;`, заголовок-шапка WSM, частота в кГц, уровень «RF level».
+- **Generic CSV**: frequency in MHz (3 decimals) + level (4 decimals).
+- **Shure WWB**: one trace per file (select trace 1–4), frequency in MHz.
+- **Sennheiser WSM**: `;` delimiter, WSM header, frequency in kHz, level "RF level".
