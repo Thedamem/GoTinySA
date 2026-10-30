@@ -2,11 +2,11 @@
   <img src="assets/logo.png" alt="tinysa_go" width="148">
 </p>
 
-# tinysa_go
+# GoTinySA
 
 **English** | [Русский](README.ru.md)
 
-tinysa_go is a desktop spectrum-analyzer application for the **tinySA** and **tinySA Ultra**, written in Go with a Wails/Svelte frontend. It is a port of [QtTinySA](https://github.com/g4ixt/QtTinySA) and keeps the original feature set while moving serial I/O, sweep parsing, logging, and file work off the UI thread.
+GoTinySA is a desktop spectrum-analyzer application for the **tinySA** and **tinySA Ultra**, written in Go with a Wails/Svelte frontend. It is a port of [QtTinySA](https://github.com/g4ixt/QtTinySA) and keeps the original feature set while moving serial I/O, sweep parsing, logging, and file work off the UI thread.
 
 The application ships as a single binary for Linux and Windows. A built-in HTTP server provides a separate phone interface for tuning an antenna from the same local network.
 
