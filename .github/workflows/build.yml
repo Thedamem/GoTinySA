@@ -4,14 +4,28 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (for example v0.1.0). Created at the selected commit if missing. Leave empty to build artifacts only.'
+        required: false
+        type: string
 
 permissions:
   contents: write
 
+env:
+  WAILS_VERSION: v2.17.0
+  APPIMAGE_TOOL_VERSION: '1.9.1'
+  APPIMAGE_TOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+  APPIMAGE_RUNTIME_VERSION: '20251108'
+  APPIMAGE_RUNTIME_SHA256: 2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
+
 jobs:
   build:
-    name: Linux and Windows
+    name: Linux, Windows, and AppImage
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -37,18 +51,69 @@ jobs:
 
       - name: Wails CLI
         run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+          go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
           wails version
+
+      - name: Version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ -n "${RELEASE_TAG}" && "${RELEASE_TAG}" != v* ]]; then
+            echo "::error::Release tag must start with 'v'"
+            exit 1
+          fi
+          if [[ -n "${RELEASE_TAG}" ]]; then
+            version="${RELEASE_TAG}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          echo "APPIMAGE_PATH=build/bin/tinysa_go-${version//\//-}-linux-x86_64.AppImage" >> "$GITHUB_ENV"
 
       - name: Build Linux
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF_NAME}"
-          else
-            VERSION="dev-$(git rev-parse --short HEAD)"
-          fi
           wails build -tags webkit2_41 -platform linux/amd64 \
             -ldflags "-X tinysa_go/internal/version.Version=${VERSION} -X tinysa_go/internal/version.Commit=$(git rev-parse --short HEAD) -X tinysa_go/internal/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Build AppImage
+        run: |
+          set -euo pipefail
+          appdir="${RUNNER_TEMP}/AppDir"
+          rm -rf "$appdir"
+          mkdir -p "$appdir/usr/bin" \
+            "$appdir/usr/share/applications" \
+            "$appdir/usr/share/icons/hicolor/1024x1024/apps" \
+            "$appdir/usr/share/licenses/tinysa_go"
+          install -m 0755 build/bin/tinysa_go "$appdir/usr/bin/tinysa_go"
+          install -m 0644 LICENSE "$appdir/usr/share/licenses/tinysa_go/LICENSE"
+          install -m 0644 build/appicon.png "$appdir/usr/share/icons/hicolor/1024x1024/apps/tinysa_go.png"
+          install -m 0644 build/linux/tinysa_go.desktop "$appdir/usr/share/applications/tinysa_go.desktop"
+          install -m 0644 build/appicon.png "$appdir/tinysa_go.png"
+          install -m 0644 build/linux/tinysa_go.desktop "$appdir/tinysa_go.desktop"
+          ln -s tinysa_go.png "$appdir/.DirIcon"
+          cat > "$appdir/AppRun" <<'APPRUN'
+          #!/bin/sh
+          set -e
+          here="$(dirname "$(readlink -f "$0")")"
+          exec "$here/usr/bin/tinysa_go" "$@"
+          APPRUN
+          chmod 0755 "$appdir/AppRun"
+
+          tool="${RUNNER_TEMP}/appimagetool"
+          curl -fsSL --retry 3 -o "$tool" \
+            "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGE_TOOL_VERSION}/appimagetool-x86_64.AppImage"
+          echo "${APPIMAGE_TOOL_SHA256}  ${tool}" | sha256sum -c -
+          chmod 0755 "$tool"
+
+          runtime="${RUNNER_TEMP}/runtime-x86_64"
+          curl -fsSL --retry 3 -o "$runtime" \
+            "https://github.com/AppImage/type2-runtime/releases/download/${APPIMAGE_RUNTIME_VERSION}/runtime-x86_64"
+          echo "${APPIMAGE_RUNTIME_SHA256}  ${runtime}" | sha256sum -c -
+
+          ARCH=x86_64 VERSION="${VERSION#v}" \
+            "$tool" --appimage-extract-and-run --runtime-file "$runtime" "$appdir" "$APPIMAGE_PATH"
 
       - name: Upload Linux app
         uses: actions/upload-artifact@v7
@@ -57,13 +122,15 @@ jobs:
           path: build/bin/tinysa_go
           if-no-files-found: error
 
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: tinysa_go-linux-amd64-appimage
+          path: build/bin/*.AppImage
+          if-no-files-found: error
+
       - name: Build Windows
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF_NAME}"
-          else
-            VERSION="dev-$(git rev-parse --short HEAD)"
-          fi
           wails build -platform windows/amd64 \
             -ldflags "-X tinysa_go/internal/version.Version=${VERSION} -X tinysa_go/internal/version.Commit=$(git rev-parse --short HEAD) -X tinysa_go/internal/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -88,13 +155,16 @@ jobs:
             build/bin/tinysa-cli.exe
           if-no-files-found: error
 
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
         uses: softprops/action-gh-release@v3
         with:
-          generate_release_notes: true
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: ${{ github.event_name != 'release' }}
           files: |
             build/bin/tinysa_go
             build/bin/tinysa_go.exe
             build/bin/tinysa-cli
             build/bin/tinysa-cli.exe
+            build/bin/*.AppImage

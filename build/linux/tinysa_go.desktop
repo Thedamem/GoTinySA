@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=tinysa_go
+GenericName=Spectrum analyzer
+Comment=Desktop spectrum analyzer for tinySA and tinySA Ultra
+Exec=tinysa_go
+Icon=tinysa_go
+Terminal=false
+Categories=Science;
+Keywords=tinySA;spectrum;analyzer;RF;
+StartupWMClass=tinysa_go

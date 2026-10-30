@@ -94,7 +94,7 @@ go test -tags webkit2_41 -race ./...
 
 ## CI и релизы
 
-GitHub Actions выполняет проверки в `.github/workflows/ci.yml` и собирает артефакты Linux и Windows в `.github/workflows/build.yml`. Теги `v*` публикуют релиз с приложением и бинарниками `tinysa-cli`.
+GitHub Actions выполняет проверки в `.github/workflows/ci.yml` и собирает артефакты Linux, Windows и AppImage в `.github/workflows/build.yml`. Теги `v*` публикуют релиз с приложением, AppImage и бинарниками `tinysa-cli`. Публикация GitHub-релиза или ручной запуск workflow с тегом делают то же самое. Для AppImage на целевой системе нужны GTK 3 и WebKit2GTK 4.1; эти библиотеки не входят в образ.
 
 ## Windows: USB-устройство не найдено
 

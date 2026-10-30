@@ -94,7 +94,7 @@ Tests use fake serial ports and backends; no hardware is required.
 
 ## CI and releases
 
-GitHub Actions runs the checks in `.github/workflows/ci.yml` and builds Linux and Windows artifacts in `.github/workflows/build.yml`. Tags matching `v*` publish a release with the application and `tinysa-cli` binaries.
+GitHub Actions runs the checks in `.github/workflows/ci.yml` and builds Linux, Windows, and AppImage artifacts in `.github/workflows/build.yml`. Tags matching `v*` publish a release with the application, AppImage, and `tinysa-cli` binaries. Publishing a GitHub release or running the workflow manually with a tag does the same. The AppImage requires GTK 3 and WebKit2GTK 4.1 on the target system; those libraries are not bundled.
 
 ## Windows: USB device not found
 
