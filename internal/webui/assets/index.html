@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0f13">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>tinySA — spectrum analyzer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23e8b64c'/%3E%3Cpath d='M7 23h4v-8H7zm7 0h4V9h-4zm7 0h4v-6h-4z' fill='%23120d03'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">tinySA</span>
+  </div>
+  <div class="topmeta">
+    <span id="linkState" class="state idle" role="status" aria-live="polite" data-i18n="state.disconnected">disconnected</span>
+    <span id="modelLabel" class="meta"></span>
+    <span id="batteryLabel" class="meta"></span>
+    <span id="fpsLabel" class="meta">0 fps</span>
+    <select id="langSelect" class="lang-select" aria-label="Language" data-i18n-aria="lang.label">
+      <option value="en">EN</option>
+      <option value="ru">RU</option>
+    </select>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="visual">
+    <section class="readout" aria-label="Last sweep result" data-i18n-aria="readout.aria">
+      <div class="peak-block">
+        <span class="label" data-i18n="readout.peak">Peak</span>
+        <span id="peakFreq" class="peak-freq">—</span>
+        <span id="peakLevel" class="peak-level">— dBm</span>
+      </div>
+      <dl class="metrics">
+        <div class="metric"><dt>SNR</dt><dd id="snr">—</dd></div>
+        <div class="metric"><dt data-i18n="readout.noise">Noise</dt><dd id="noise">—</dd></div>
+        <div class="metric"><dt data-i18n="readout.range">Range</dt><dd id="range">—</dd></div>
+        <div class="metric"><dt data-i18n="readout.hold">Maximum</dt><dd id="hold">—</dd></div>
+      </dl>
+    </section>
+
+    <section class="panel plots" aria-label="Plots" data-i18n-aria="plots.aria">
+      <div class="plot-head">
+        <h2 data-i18n="plot.spectrum">Spectrum</h2>
+        <div class="legend" role="group" aria-label="Visible traces" data-i18n-aria="legend.aria">
+          <span class="legend-item"><span class="swatch live" aria-hidden="true"></span><span data-i18n="legend.live">Live</span></span>
+          <label class="legend-item"><input id="showMax" type="checkbox" checked><span class="swatch max" aria-hidden="true"></span><span data-i18n="legend.max">Max</span></label>
+          <label class="legend-item"><input id="showAvg" type="checkbox" checked><span class="swatch avg" aria-hidden="true"></span><span data-i18n="legend.avg">Average</span></label>
+          <label class="legend-item"><input id="showMin" type="checkbox"><span class="swatch min" aria-hidden="true"></span><span data-i18n="legend.min">Min</span></label>
+        </div>
+      </div>
+      <div class="canvasbox spectrum">
+        <canvas id="spectrum" aria-label="Spectrum: drag to place a marker" data-i18n-aria="spectrum.aria"></canvas>
+      </div>
+      <p id="tapInfo" class="plot-hint" data-i18n="tap.default">Drag on the plot to place a marker. Double-tap resets it.</p>
+
+      <div class="plot-head subhead">
+        <h2 data-i18n="plot.waterfall">Waterfall</h2>
+        <span class="plot-note" data-i18n="waterfall.note">newest rows on top</span>
+      </div>
+      <div class="canvasbox waterfall">
+        <canvas id="waterfall" aria-label="Waterfall: newest rows on top" data-i18n-aria="waterfall.aria"></canvas>
+      </div>
+    </section>
+  </div>
+
+  <aside class="controls" aria-label="Controls" data-i18n-aria="controls.aria">
+    <section class="panel" id="devicePanel">
+      <div class="panel-head">
+        <h2 data-i18n="device.title">Device</h2>
+        <span id="deviceState" class="panel-note"></span>
+      </div>
+      <div class="port-row">
+        <select id="portSelect" aria-label="USB port" data-i18n-aria="device.portAria"></select>
+        <button id="btnPorts" class="btn icon" type="button" aria-label="Refresh port list" title="Refresh port list" data-i18n-aria="device.refreshAria" data-i18n-title="device.refreshAria">↻</button>
+      </div>
+      <button id="btnConnect" class="btn primary wide" type="button" data-i18n="device.connect">Connect</button>
+      <p id="deviceHint" class="hint" data-i18n="device.hintDisconnected">Device not connected</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-i18n="range.title">Range</h2>
+        <span id="limitHint" class="panel-note"></span>
+      </div>
+      <label class="field">
+        <span data-i18n="range.preset">Preset</span>
+        <select id="bandSelect"></select>
+      </label>
+      <div class="grid2">
+        <label class="field"><span data-i18n="range.start">Start, MHz</span><input id="startMHz" type="number" inputmode="decimal" step="0.001" min="0.1" value="88"></label>
+        <label class="field"><span data-i18n="range.stop">Stop, MHz</span><input id="stopMHz" type="number" inputmode="decimal" step="0.001" min="0.1" value="108"></label>
+      </div>
+      <div class="row">
+        <button id="btnPeakCenter" class="btn" type="button" disabled data-i18n="range.peakCenter">Peak to center</button>
+        <button id="btnPeakZoom" class="btn" type="button" disabled data-i18n="range.peakZoom">Zoom to peak</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-i18n="sweep.title">Sweep</h2>
+      </div>
+      <div class="grid3">
+        <label class="field"><span data-i18n="sweep.points">Points</span><select id="points">
+          <option value="200">200</option>
+          <option value="400" selected>400</option>
+          <option value="800">800</option>
+          <option value="1200">1200</option>
+          <option value="2000">2000</option>
+        </select></label>
+        <label class="field"><span>RBW</span><select id="rbw">
+          <option value="auto" selected data-i18n="unit.auto">auto</option>
+          <option value="1" data-unit="khz">1 kHz</option>
+          <option value="3" data-unit="khz">3 kHz</option>
+          <option value="10" data-unit="khz">10 kHz</option>
+          <option value="30" data-unit="khz">30 kHz</option>
+          <option value="100" data-unit="khz">100 kHz</option>
+          <option value="300" data-unit="khz">300 kHz</option>
+          <option value="600" data-unit="khz">600 kHz</option>
+        </select></label>
+        <label class="field"><span data-i18n="sweep.atten">Attenuator</span><select id="atten">
+          <option value="auto" selected data-i18n="unit.auto">auto</option>
+          <option value="0" data-unit="db">0 dB</option>
+          <option value="3" data-unit="db">3 dB</option>
+          <option value="6" data-unit="db">6 dB</option>
+          <option value="10" data-unit="db">10 dB</option>
+          <option value="15" data-unit="db">15 dB</option>
+          <option value="20" data-unit="db">20 dB</option>
+          <option value="25" data-unit="db">25 dB</option>
+          <option value="30" data-unit="db">30 dB</option>
+        </select></label>
+      </div>
+      <div class="checks">
+        <label class="check"><input id="lna" type="checkbox"> LNA</label>
+        <label class="check"><input id="spur" type="checkbox"> Spurs</label>
+      </div>
+      <p class="hint" data-i18n="sweep.hint">Settings are applied to the device. If a sweep is already running, press Apply.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-i18n="data.title">Data</h2>
+      </div>
+      <a id="csvLink" class="btn wide disabled" href="#" download aria-disabled="true" data-i18n="data.csv">Download CSV</a>
+      <p class="hint" data-i18n="data.hint">Frequency, live/max/avg/min levels and SNR of the last sweep.</p>
+    </section>
+
+    <div class="runbar" aria-label="Sweep control" data-i18n-aria="run.aria">
+      <div class="runinfo">
+        <span id="runRange">88 – 108 MHz</span>
+      </div>
+      <button id="btnApply" class="btn" type="button" disabled title="Sweep is not running" data-i18n-title="run.applyTitleStopped" data-i18n="run.apply">Apply</button>
+      <button id="btnRun" class="btn primary" type="button" disabled data-i18n="run.start">Start</button>
+    </div>
+
+    <p class="footnote" data-i18n="footnote">Local network, no password. Do not expose this address to the internet. The server runs while the tinySA app is open.</p>
+  </aside>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<noscript><div class="noscript" data-i18n="noscript">This web interface requires JavaScript.</div></noscript>
+<script src="/app.js"></script>
+</body>
+</html>

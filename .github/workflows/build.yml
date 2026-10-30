@@ -1,0 +1,100 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Linux and Windows
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: System dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+          wails version
+
+      - name: Build Linux
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="dev-$(git rev-parse --short HEAD)"
+          fi
+          wails build -tags webkit2_41 -platform linux/amd64 \
+            -ldflags "-X tinysa_go/internal/version.Version=${VERSION} -X tinysa_go/internal/version.Commit=$(git rev-parse --short HEAD) -X tinysa_go/internal/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Upload Linux app
+        uses: actions/upload-artifact@v7
+        with:
+          name: tinysa_go-linux-amd64
+          path: build/bin/tinysa_go
+          if-no-files-found: error
+
+      - name: Build Windows
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="dev-$(git rev-parse --short HEAD)"
+          fi
+          wails build -platform windows/amd64 \
+            -ldflags "-X tinysa_go/internal/version.Version=${VERSION} -X tinysa_go/internal/version.Commit=$(git rev-parse --short HEAD) -X tinysa_go/internal/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v7
+        with:
+          name: tinysa_go-windows-amd64
+          path: build/bin/tinysa_go.exe
+          if-no-files-found: error
+
+      - name: Build CLI
+        run: |
+          go build -o build/bin/tinysa-cli ./cmd/tinysa-cli
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o build/bin/tinysa-cli.exe ./cmd/tinysa-cli
+
+      - name: Upload CLI
+        uses: actions/upload-artifact@v7
+        with:
+          name: tinysa-cli
+          path: |
+            build/bin/tinysa-cli
+            build/bin/tinysa-cli.exe
+          if-no-files-found: error
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          files: |
+            build/bin/tinysa_go
+            build/bin/tinysa_go.exe
+            build/bin/tinysa-cli
+            build/bin/tinysa-cli.exe

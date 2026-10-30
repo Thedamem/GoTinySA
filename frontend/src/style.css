@@ -1,0 +1,56 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    background: #f0f0f0;
+    color: #1e1e1e;
+    font-family: "Segoe UI", "Noto Sans", system-ui, sans-serif;
+    font-size: 13px;
+}
+
+#app {
+    height: 100%;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button, input, select {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+    background: #e8e8e8;
+    border: 1px solid #a8a8a8;
+    border-radius: 2px;
+    padding: 3px 10px;
+    font-size: 12px;
+}
+
+button:hover:not(:disabled) {
+    background: #dcdcdc;
+}
+
+button:disabled {
+    color: #9a9a9a;
+    cursor: default;
+}
+
+input, select {
+    background: #fff;
+    border: 1px solid #a8a8a8;
+    border-radius: 2px;
+    padding: 3px 5px;
+    font-size: 12px;
+    outline: none;
+}
+
+input:focus, select:focus {
+    border-color: #4a90d9;
+}
+
+.mono {
+    font-family: "Consolas", "DejaVu Sans Mono", ui-monospace, monospace;
+}

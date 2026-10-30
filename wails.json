@@ -1,0 +1,19 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "tinysa_go",
+  "outputfilename": "tinysa_go",
+  "frontend:install": "npm ci",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "tinysa_go contributors",
+    "email": ""
+  },
+  "info": {
+    "productName": "tinysa_go",
+    "productVersion": "0.1.0",
+    "copyright": "GPL-3.0-or-later",
+    "comments": "Go port of QtTinySA"
+  }
+}

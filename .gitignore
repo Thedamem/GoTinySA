@@ -1,0 +1,37 @@
+# reference checkout of QtTinySA — pinned in docs/REFERENCE.md, never commit it
+/reference/
+
+# build artifacts
+/bin/
+/dist/
+/build/bin/
+*.exe
+
+# frontend
+frontend/node_modules/
+
+# runtime data
+/logs/
+*.log
+*.tmp
+
+# local secrets and environment overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# editor directories
+.idea/
+.vscode/
+
+# browser automation artifacts
+.playwright-mcp/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# wails generated hash
+frontend/package.json.md5
